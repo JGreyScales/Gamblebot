@@ -1,5 +1,4 @@
 import disnake, random, math
-from Config.helpers import helpers
 class RussianRoullete:
     def __init__(self, id: int, players: list, owner: int, entryFee: int) -> None:
         self.id = id
@@ -44,14 +43,16 @@ class RussianRoullete:
             returnValue = await RussianRoullete.assist_nextPlayer(self, message, room)
             # finally, run code deciding if the player has won, or who the next player is
 
-            if returnValue == True:
-                return True
+            if type(returnValue) == list:
+                return returnValue
             
     async def spinBarrel(self, message: disnake.Message, room: dict) -> bool:
         if self.gameState == True:
             self.bulletChamber = random.randint(1, len(room["players"]))
             returnStatus = await RussianRoullete.assist_nextPlayer(self, message, room)
-            if returnStatus == False:
+            if type(returnStatus) == list:
+                return returnStatus
+            elif returnStatus == False:
                 await room["gameChannel"].send(f"The barrel has been spun")
 
     
