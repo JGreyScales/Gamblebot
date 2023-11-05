@@ -1,7 +1,6 @@
 import disnake, json, disnake.utils
 from disnake.ext import commands
-# from ..RussianRoullete.RRclass import RussianRoullete as RR
-from RussianRoullete.RRclass import RussianRoullete as RR
+from Games.RRclass import RussianRoullete as RR
 class helpers:
        
 
@@ -41,7 +40,8 @@ class helpers:
 
         #  send end user avalible functions inside of the game channel
         await gameChannel.send("To run these commands type !<function name>")
-        await gameChannel.send("\n".join([method for method in dir(gameObject) if method.startswith('__') == False and (method in gameObject.__dict__.keys()) == False and method[0:7] != "assist_"]))
+        commands = await gameChannel.send("\n".join([method for method in dir(gameObject) if method.startswith('__') == False and (method in gameObject.__dict__.keys()) == False and method[0:7] != "assist_"]))
+        await commands.pin()
 
         # GameObject
         # MessageID for Host

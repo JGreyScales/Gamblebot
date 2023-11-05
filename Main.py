@@ -110,6 +110,8 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
     guildID = ctx.guild.id
     # check if player is already in ANY room. this can be done by the locateroom method with the arg being True
     # if the value returns anything but false; the user is in a room inside that guild
+
+    # Write a check which checks the gamestate of the room, if the gamestate is true then the room is no longer joinable
     deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
     if deductStatus == True:
         permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
@@ -176,14 +178,29 @@ async def on_ready():
 # ------------------------- #
 @client.event
 async def on_message(message: disnake.Message):
-    if message.content[0] == "!":
-        global rooms
-        roomID = helpers.locateRoom(rooms, message.guild.id, message.author.id, True)
-        if roomID != False:
-            method = getattr(rooms[message.guild.id][roomID]["gameObject"], message.content[1::])
-            method(message, rooms[message.guild.id][roomID])
-    elif message.author.bot != True:
-        helpers.increaseBalance(message.guild.id, message.author, random.randint(1, 5))
+    try:
+        if message.content[0] == "!":
+            global rooms
+            roomID = helpers.locateRoom(rooms, message.guild.id, message.author.id, True)
+            if roomID != False:
+                try:
+                    method = getattr(rooms[message.guild.id][roomID]["gameObject"], message.content[1::])
+                    returnStatus = await method(message, rooms[message.guild.id][roomID])
+                    try:
+                        if returnStatus[2] == True:
+                            # pay the winner
+                            helpers.increaseBalance(message.guild.id, await message.guild.fetch_member(returnStatus[0]), returnStatus[1])
+                            # run cleanup code
+                            pass
+                    except:
+                        pass
+                except:
+                    pass
+                # write a statement saying invalid command
+        elif message.author.bot != True:
+            helpers.increaseBalance(message.guild.id, message.author, random.randint(1, 5))
+    except(IndexError):
+        pass
 
 
 client.run(os.environ.get("GambleBot"))
