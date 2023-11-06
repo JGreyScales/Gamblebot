@@ -108,20 +108,28 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
     global rooms
     author: disnake.user = ctx.author
     guildID = ctx.guild.id
-    # check if player is already in ANY room. this can be done by the locateroom method with the arg being True
+    inRoom = helpers.locateRoom(rooms, guildID, author.id, True)
     # if the value returns anything but false; the user is in a room inside that guild
-
-    # Write a check which checks the gamestate of the room, if the gamestate is true then the room is no longer joinable
-    deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
-    if deductStatus == True:
-        permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
-        if (permissionSet == True):
-            activePlayers = rooms[guildID][room_id]["players"]
-            activePlayers.append(author.id)
-            rooms[guildID][room_id]["players"] = activePlayers
-    # This else catches if the player does not have enough money to participate
+    if inRoom == False:
+        # Check to ensure that the game is not active
+        if rooms[guildID][room_id]["gameObject"].gamestate != True:
+            # Write a check which checks the gamestate of the room, if the gamestate is true then the room is no longer joinable
+            deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
+            if deductStatus == True:
+                permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
+                if (permissionSet == True):
+                    activePlayers = rooms[guildID][room_id]["players"]
+                    activePlayers.append(author.id)
+                    rooms[guildID][room_id]["players"] = activePlayers
+            # This else catches if the player does not have enough money to participate
+            else:
+                await ctx.send("You do not have enough balance to enter this room", ephemeral=True)
+        # this else catches if the room is already active
+        else:
+            await ctx.send("The game is already started, you cannot join", ephemeral=True)
+    # This else catches if the player is already in a room
     else:
-        return
+        await ctx.send("You are already in a room in this guild, unable to join", ephemeral=True)
 
 # ------------------------- #
 
@@ -139,7 +147,7 @@ async def verifySetup(client, guild):
                                 channelID = channel.id
                                 break
                         else:
-                            # create text channe;
+                            # create text channel
                             channel = await catergory[0].create_text_channel("rooms")
                             await channel.set_permissions(guild.default_role,send_messages=False,add_reactions=False,embed_links=False,attach_files=False,create_instant_invite=False,create_public_threads=False,use_application_commands=False)
                             channelID = channel.id
