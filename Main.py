@@ -65,10 +65,18 @@ def storeRoom(funcInfo, gameInfo, guild) -> bool:
 #  store game types
 class Games(str, Enum):
     RussianRoullete = 0
+    test = 0
 # ------------------------- #
 
 
 # ------------------------- #
+@client.slash_command()
+async def help(ctx: disnake.ApplicationCommandInteraction):
+    
+    games = "\n\t".join([k for k in Games.__dict__ if not k.startswith('_')])
+    # Make this nice with an embed eventually
+    await ctx.send(content=("Use /start_game to create a room and begin gambling\nUse /Join and provide the room ID to join an active game\nCurrent games that can be played:\n\t" + games), ephemeral=True)
+
 #  start the game
 @client.slash_command()
 async def start_game(ctx: disnake.ApplicationCommandInteraction,
