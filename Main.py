@@ -69,6 +69,13 @@ class Games(str, Enum):
 
 
 # ------------------------- #
+@client.slash_command()
+async def help(ctx: disnake.ApplicationCommandInteraction):
+    
+    games = "\n\t".join([k for k in Games.__dict__ if not k.startswith('_')])
+    # Make this nice with an embed eventually
+    await ctx.send(content=("Use /start_game to create a room and begin gambling\nUse /Join and provide the room ID to join an active game\nCurrent games that can be played:\n\t" + games), ephemeral=True)
+
 #  start the game
 @client.slash_command()
 async def start_game(ctx: disnake.ApplicationCommandInteraction,
@@ -108,18 +115,28 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
     global rooms
     author: disnake.user = ctx.author
     guildID = ctx.guild.id
-    # check if player is already in ANY room. this can be done by the locateroom method with the arg being True
+    inRoom = helpers.locateRoom(rooms, guildID, author.id, True)
     # if the value returns anything but false; the user is in a room inside that guild
-    deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
-    if deductStatus == True:
-        permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
-        if (permissionSet == True):
-            activePlayers = rooms[guildID][room_id]["players"]
-            activePlayers.append(author.id)
-            rooms[guildID][room_id]["players"] = activePlayers
-    # This else catches if the player does not have enough money to participate
+    if inRoom == False:
+        # Check to ensure that the game is not active
+        if rooms[guildID][room_id]["gameObject"].gamestate != True:
+            # Write a check which checks the gamestate of the room, if the gamestate is true then the room is no longer joinable
+            deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
+            if deductStatus == True:
+                permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
+                if (permissionSet == True):
+                    activePlayers = rooms[guildID][room_id]["players"]
+                    activePlayers.append(author.id)
+                    rooms[guildID][room_id]["players"] = activePlayers
+            # This else catches if the player does not have enough money to participate
+            else:
+                await ctx.send("You do not have enough balance to enter this room", ephemeral=True)
+        # this else catches if the room is already active
+        else:
+            await ctx.send("The game is already started, you cannot join", ephemeral=True)
+    # This else catches if the player is already in a room
     else:
-        return
+        await ctx.send("You are already in a room in this guild, unable to join", ephemeral=True)
 
 # ------------------------- #
 
@@ -137,7 +154,7 @@ async def verifySetup(client, guild):
                                 channelID = channel.id
                                 break
                         else:
-                            # create text channe;
+                            # create text channel
                             channel = await catergory[0].create_text_channel("rooms")
                             await channel.set_permissions(guild.default_role,send_messages=False,add_reactions=False,embed_links=False,attach_files=False,create_instant_invite=False,create_public_threads=False,use_application_commands=False)
                             channelID = channel.id
@@ -176,14 +193,29 @@ async def on_ready():
 # ------------------------- #
 @client.event
 async def on_message(message: disnake.Message):
-    if message.content[0] == "!":
-        global rooms
-        roomID = helpers.locateRoom(rooms, message.guild.id, message.author.id, True)
-        if roomID != False:
-            method = getattr(rooms[message.guild.id][roomID]["gameObject"], message.content[1::])
-            method(message, rooms[message.guild.id][roomID])
-    elif message.author.bot != True:
-        helpers.increaseBalance(message.guild.id, message.author, random.randint(1, 5))
+    try:
+        if message.content[0] == "!":
+            global rooms
+            roomID = helpers.locateRoom(rooms, message.guild.id, message.author.id, True)
+            if roomID != False:
+                try:
+                    method = getattr(rooms[message.guild.id][roomID]["gameObject"], message.content[1::])
+                    returnStatus = await method(message, rooms[message.guild.id][roomID])
+                    try:
+                        if returnStatus[2] == True:
+                            # pay the winner
+                            helpers.increaseBalance(message.guild.id, await message.guild.fetch_member(returnStatus[0]), returnStatus[1])
+                            # run cleanup code
+                            pass
+                    except:
+                        pass
+                except:
+                    pass
+                # write a statement saying invalid command
+        elif message.author.bot != True:
+            helpers.increaseBalance(message.guild.id, message.author, random.randint(1, 5))
+    except(IndexError):
+        pass
 
 
 client.run(os.environ.get("GambleBot"))
