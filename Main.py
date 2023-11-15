@@ -66,7 +66,6 @@ def storeRoom(funcInfo, gameInfo, guild) -> bool:
 #  store game types
 class Games(str, Enum):
     RussianRoullete = 0
-    test = 0
 # ------------------------- #
 
 

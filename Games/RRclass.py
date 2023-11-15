@@ -66,7 +66,3 @@ class RussianRoullete:
             self.multiplier = len(self.players)
             text = (f"""Game started, Please use !fire to commence future rounds until this room is completed\nEach player can use !spinBarrel once to randomly spin the barrel and pass it to the next person\nIt is currently {await message.guild.fetch_member(self.players[self.currentIndex])}'s turn""")
             await room["gameChannel"].send(text)
-
-
-
-# testing for grammerly, however I do not see it working correctly
