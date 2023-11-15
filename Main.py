@@ -53,6 +53,7 @@ def storeRoom(funcInfo, gameInfo, guild) -> bool:
 
     gameInfo["gameObject"] = funcInfo[0]
     gameInfo["gameChannel"] = funcInfo[2]
+    gameInfo["hostMessage"] = funcInfo[3]
 
     try:
         rooms[guild][funcInfo[1]] = gameInfo
@@ -60,7 +61,7 @@ def storeRoom(funcInfo, gameInfo, guild) -> bool:
         rooms[guild] = {}
         rooms[guild][funcInfo[1]] = gameInfo
 
-    return True if funcInfo[3] == True else False
+    return True if funcInfo[4] == True else False
 
 #  store game types
 class Games(str, Enum):
@@ -120,8 +121,8 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
     # if the value returns anything but false; the user is in a room inside that guild
     if inRoom == False:
         # Check to ensure that the game is not active
+        # Active games game the gamestate of True
         if rooms[guildID][room_id]["gameObject"].gamestate != True:
-            # Write a check which checks the gamestate of the room, if the gamestate is true then the room is no longer joinable
             deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
             if deductStatus == True:
                 permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
@@ -141,6 +142,12 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
 
 # ------------------------- #
 
+@client.slash_command()
+async def balance(ctx: disnake.ApplicationCommandInteraction):
+        configInfo = json.load(open(f"Config\\Guilds\\{ctx.guild.id}.json", "r"))
+        balance = configInfo["economy"][str(ctx.author.id)]
+
+        await ctx.send(f"You current have {balance} credits", ephemeral=True)
 
 
 # ------------------------- #
@@ -207,7 +214,8 @@ async def on_message(message: disnake.Message):
                             # pay the winner
                             helpers.increaseBalance(message.guild.id, await message.guild.fetch_member(returnStatus[0]), returnStatus[1])
                             # run cleanup code
-                            pass
+                            await rooms[message.guild.id][roomID]["hostMessage"].delete()
+                            await rooms[message.guild.id][roomID]["GameChannel"].delete(reason="Game Closed")
                     except:
                         pass
                 except:
