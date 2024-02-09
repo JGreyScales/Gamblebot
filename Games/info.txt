@@ -1,0 +1,20 @@
+If you write a function starting with assist_, it will not show to the end users as a playable function
+
+This is useful for cases where you require a helper function to be built into the game but you also require functions such as "run round"
+Reference RRclass.py for example usage
+
+the method MUST be async; even if it does not use any async attributes or methods
+
+declaring parameter message is required for end-user game functions
+declaring parameter for Dict value from the room in storage is required for end-user game functions
+
+
+when returning the winner of the game, do so in this format
+return [playerID of winner, payout amount, True]
+the third object (True) is a failsafe to ensure that the game was intentionally closed; this is the value that will be checked by the main thread
+
+
+Ensure that you have a gamestate variable within your class, this function will tell the main thread if the game is active or waiting for players
+When set to True, the game is active and will be removed from the open rooms list and well as restrict users from joining
+When set to False, the game is inactive
+When set to 2 the game is "finished" and the channel will close and be deleted from the internal rooms list

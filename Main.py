@@ -3,7 +3,7 @@
 # Contributers:
 # 
 # ------------------------- #
-import disnake, os, json, random
+import disnake, os, json, random, asyncio
 from enum import Enum
 from disnake.ext import commands
 
@@ -19,6 +19,7 @@ from Config.helpers import helpers
 # bot definement
 intents = disnake.Intents.all()
 client = commands.InteractionBot(intents=intents)
+
  # ------------------------- #
 
 # ------------------------- #
@@ -149,6 +150,9 @@ async def verifySetup(client, guild):
                     await catergory.set_permissions(guild.default_role,send_messages=False,add_reactions=False,embed_links=False,attach_files=False,create_instant_invite=False,create_public_threads=False,use_application_commands=False)
                     channel = await catergory.create_text_channel("rooms")
                     channelID = channel.id
+
+
+                    # Bug with catergory ID causes fatal error on initial setup and creation; not iterable, return object is "GambleBot"
                     catergoryID = catergory[0].id
                     
 
@@ -162,6 +166,9 @@ async def verifySetup(client, guild):
 
                 with open(f"Config\\Guilds\\{guild.id}.json", "w+") as file:
                     json.dump(config, file, indent=4)
+
+
+
 @client.event
 async def on_ready():
     for guild in client.guilds:
@@ -170,7 +177,29 @@ async def on_ready():
         except(FileNotFoundError):
             await verifySetup(client, guild)
     print("bot booted")
-    
+    loop = asyncio.get_event_loop()
+    print("Init of room watcher thread beginning")
+    task = loop.create_task(checkCurrentRooms())
+
+async def checkCurrentRooms():
+    global rooms
+    print("room watcher began")
+    while True:
+        for guild in rooms:
+            for guildroom in rooms[guild]:
+                try:
+                # if the game has gone live remove the message from avalible rooms
+                    if rooms[guild][guildroom]["gameObject"].gameState == True:
+                        await rooms[guild][guildroom]["hostMessage"].delete()
+                # if the game has finished, delete it from rooms storage, and delete the channel
+                    elif rooms[guild][guildroom]["gameObject"].gameState == 2:
+                        await rooms[guild][guildroom]["gameChannel"].delete()
+                        del rooms[guild][guildroom]
+                except:
+                    pass
+        await asyncio.sleep(20)
+
+
 # ------------------------- #
 
 # ------------------------- #

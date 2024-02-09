@@ -1,4 +1,4 @@
-import disnake, json, disnake.utils
+import disnake, json, disnake.utils, asyncio
 from disnake.ext import commands
 # from ..RussianRoullete.RRclass import RussianRoullete as RR
 from RussianRoullete.RRclass import RussianRoullete as RR
