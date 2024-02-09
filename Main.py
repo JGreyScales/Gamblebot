@@ -212,17 +212,19 @@ async def checkCurrentRooms():
         try:
             for guild in rooms:
                 for guildroom in rooms[guild]:
-                # if the game has gone live remove the message from avalible rooms
-                    if rooms[guild][guildroom]["gameObject"].gameState == True:
-                        await rooms[guild][guildroom]["hostMessage"].delete()
-                # if the game has finished, delete it from rooms storage, and delete the channel
-                    elif rooms[guild][guildroom]["gameObject"].gameState == 2:
-                        await rooms[guild][guildroom]["gameChannel"].delete()
-                        del rooms[guild][guildroom]
+                    try:
+                    # if the game has gone live remove the message from avalible rooms
+                        if rooms[guild][guildroom]["gameObject"].gameState == True:
+                            await rooms[guild][guildroom]["hostMessage"].delete()
+                    # if the game has finished, delete it from rooms storage, and delete the channel
+                        elif rooms[guild][guildroom]["gameObject"].gameState == 2:
+                            await rooms[guild][guildroom]["gameChannel"].delete()
+                            del rooms[guild][guildroom]
+
+                    except Exception as e:
+                        print(e)
         except RuntimeError:
             pass
-        except Exception as e:
-            print(e)
         await asyncio.sleep(20)
 
 
