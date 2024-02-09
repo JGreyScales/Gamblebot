@@ -36,7 +36,7 @@ class helpers:
         gameChannel = await helpers.createRoom(guild, configInfo["Catergory"], ownerID, givenID, ownerName)
 
         # make this all fancy with an embed eventually
-        await hostChannel.send(f"Room:{givenID}\nopen for game:{gameName}\nby:{ownerName}\nStatus:Open\nEntryFee:{entryFee}")       
+        hostMessage = await hostChannel.send(f"Room:{givenID}\nopen for game:{gameName}\nby:{ownerName}\nStatus:Open\nEntryFee:{entryFee}")       
 
         #  send end user avalible functions inside of the game channel
         await gameChannel.send("To run these commands type !<function name>")
@@ -47,7 +47,7 @@ class helpers:
         # MessageID for Host
         # game Channel ID
         # Init Status
-        return [gameObject, givenID, gameChannel, True]
+        return [gameObject, givenID, gameChannel, hostMessage, True]
     
 
 
@@ -100,3 +100,6 @@ class helpers:
         with open(f"Config\\Guilds\\{guildID}.json", "w") as file:
                     json.dump(configInfo, file, indent=4)
         return True
+
+
+    def cleanUpRoom()
