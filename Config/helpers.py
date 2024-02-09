@@ -1,4 +1,4 @@
-import disnake, json, disnake.utils, asyncio
+import disnake, json, disnake.utils
 from disnake.ext import commands
 from Games.RRclass import RussianRoullete as RR
 class helpers:
@@ -100,6 +100,3 @@ class helpers:
         with open(f"Config\\Guilds\\{guildID}.json", "w") as file:
                     json.dump(configInfo, file, indent=4)
         return True
-
-
-    def cleanUpRoom()
