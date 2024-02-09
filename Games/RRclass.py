@@ -29,7 +29,7 @@ class RussianRoullete:
         # if only one player is left, award them and close the game
         if len(self.players) == 1:
             await room["gameChannel"].send(f"Congrats, you have won. Your payout is {math.floor((self.entryFee * self.multiplier) / 1.8)}")
-            self.gameState = False
+            self.gameState = 2
             return [self.players[0], math.floor((self.entryFee * self.multiplier) / 1.8), True]
         else:
             await room["gameChannel"].send(f"It is currently {await message.guild.fetch_member(self.players[self.currentIndex])}'s turn")
