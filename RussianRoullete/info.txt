@@ -1,7 +1,0 @@
-IF you write a function starting with assist_, it will not show to the end users as a playerable function
-
-This is useful for cases where you require a helper function to be built into the game but you also require functions such as "run round"
-Reference RRclass.py for example usage
-
-declaring parameter message is required for end user game functions
-declaring parameter for Dict value from the room in storage is required for end user game functions
