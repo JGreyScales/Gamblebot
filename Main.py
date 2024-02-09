@@ -209,9 +209,9 @@ async def checkCurrentRooms():
     global rooms
     print("room watcher began")
     while True:
-        for guild in rooms:
-            for guildroom in rooms[guild]:
-                try:
+        try:
+            for guild in rooms:
+                for guildroom in rooms[guild]:
                 # if the game has gone live remove the message from avalible rooms
                     if rooms[guild][guildroom]["gameObject"].gameState == True:
                         await rooms[guild][guildroom]["hostMessage"].delete()
@@ -219,8 +219,10 @@ async def checkCurrentRooms():
                     elif rooms[guild][guildroom]["gameObject"].gameState == 2:
                         await rooms[guild][guildroom]["gameChannel"].delete()
                         del rooms[guild][guildroom]
-                except:
-                    pass
+        except RuntimeError:
+            pass
+        except Exception as e:
+            print(e)
         await asyncio.sleep(20)
 
 

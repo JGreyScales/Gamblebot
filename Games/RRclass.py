@@ -36,7 +36,7 @@ class RussianRoullete:
             return False
             
     async def fire(self, message: disnake.Message, room: dict) -> bool:
-        if self.gameState == True:
+        if self.gameState == True and len(self.players) > 1:
             if self.bulletChamber == self.currentIndex + 1:
                 await room["gameChannel"].set_permissions(message.author, view_channel=False, send_messages=False)
                 self.players.pop(self.currentIndex)
@@ -45,6 +45,9 @@ class RussianRoullete:
             returnValue = await RussianRoullete.assist_nextPlayer(self, message, room)
             if type(returnValue) == list:
                 return returnValue
+        else:
+            returnValue = await RussianRoullete.assist_nextPlayer(self, message, room)
+            return returnValue
             
     async def spinBarrel(self, message: disnake.Message, room: dict) -> bool:
         if self.gameState == True:
@@ -62,7 +65,7 @@ class RussianRoullete:
             self.bulletChamber = random.randint(1, len(room["players"]))
             self.gameState = True
             self.players = list(room["players"])
-            self.currentIndex = random.randint(0, len(room["players"]))
+            self.currentIndex = random.randint(0, len(room["players"]) - 1)
             self.multiplier = len(self.players)
             text = (f"""Game started, Please use !fire to commence future rounds until this room is completed\nEach player can use !spinBarrel once to randomly spin the barrel and pass it to the next person\nIt is currently {await message.guild.fetch_member(self.players[self.currentIndex])}'s turn""")
             await room["gameChannel"].send(text)
