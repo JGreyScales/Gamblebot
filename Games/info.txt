@@ -15,5 +15,6 @@ the third object (True) is a failsafe to ensure that the game was intentionally 
 
 
 Ensure that you have a gamestate variable within your class, this function will tell the main thread if the game is active or waiting for players
-When set to True, the game is active
+When set to True, the game is active and will be removed from the open rooms list and well as restrict users from joining
 When set to False, the game is inactive
+When set to 2 the game is "finished" and the channel will close and be deleted from the internal rooms list
