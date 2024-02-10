@@ -16,7 +16,6 @@ class RussianRoullete:
         self.currentIndex = 0
         # the payout multiplier
         self.multiplier = 1
-
         # gameState is a required field
         self.gameState = False
     
@@ -51,7 +50,7 @@ class RussianRoullete:
             
     async def spinBarrel(self, message: disnake.Message, room: dict) -> bool:
         if self.gameState == True:
-            self.bulletChamber = random.randint(1, len(room["players"]))
+            self.bulletChamber = random.randint(0, len(room["players"]) - 1)
             returnStatus = await RussianRoullete.assist_nextPlayer(self, message, room)
             if type(returnStatus) == list:
                 return returnStatus

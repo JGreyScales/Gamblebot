@@ -3,22 +3,40 @@
 # Contributers:
 # 
 # ------------------------- #
-import disnake, os, json, random, asyncio
+import disnake, os, json, random, asyncio, signal
 from enum import Enum
 from disnake.ext import commands
+from Config.helpers import helpers
 
 Idticker = 1
 
 rooms = {
-    
 }
 
 # game definements
-from Config.helpers import helpers
 
 # bot definement
 intents = disnake.Intents.all()
 client = commands.InteractionBot(intents=intents)
+
+
+async def garbageCollectionOnClosure():
+    for guild in rooms:
+        for guildroom in rooms[guild]:
+            await rooms[guild][guildroom]["hostMessage"].delete()
+            await rooms[guild][guildroom]["gameChannel"].delete()
+    exit(1)
+
+def closureHandle(signum, frame):
+    # we do not need these in memory and they are required for the signal to function
+    del signum, frame
+    # set the function to "return" the uncaught task never retrieved, but do not store it to memory as this is an expected error
+    asyncio.gather(garbageCollectionOnClosure(), return_exceptions=True)
+    # Begin the async task and prepare garbage collection
+    asyncio.create_task(garbageCollectionOnClosure())
+
+# Begin an async signal to watch for ctrl+_ commands and handle them
+signal.signal(signal.SIGINT, closureHandle)
 
  # ------------------------- #
 
@@ -245,9 +263,6 @@ async def on_message(message: disnake.Message):
                         if returnStatus[2] == True:
                             # pay the winner
                             helpers.increaseBalance(message.guild.id, await message.guild.fetch_member(returnStatus[0]), returnStatus[1])
-                            # run cleanup code
-                            await rooms[message.guild.id][roomID]["hostMessage"].delete()
-                            await rooms[message.guild.id][roomID]["GameChannel"].delete(reason="Game Closed")
                     except:
                         pass
                 except:
@@ -258,5 +273,7 @@ async def on_message(message: disnake.Message):
     except(IndexError):
         pass
 
-
-client.run(os.environ.get("GambleBot"))
+try:
+    client.run(os.environ.get("GambleBot"))
+except(SystemExit):
+    print("Exit Handled")
