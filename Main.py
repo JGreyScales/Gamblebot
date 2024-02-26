@@ -100,7 +100,7 @@ async def help(ctx: disnake.ApplicationCommandInteraction):
 @client.slash_command()
 async def start_game(ctx: disnake.ApplicationCommandInteraction,
                      selected_game: Games,
-                    #  Positive interger greater than 0
+                    #  Positive integer greater than 0
                      entry_fee: commands.Range[int, 1, ...]):
     
     gameInfo = {
