@@ -1,12 +1,24 @@
+# Known bugs
+# When a user is elimated they are not removed from the game list until the game has completed
+
 # Due to async "thread" cycling, we do not need to worry about thread safe memory or process access
 # Written by JGreyScales
 # Contributers:
 # 
 # ------------------------- #
+
 import disnake, os, json, random, asyncio, signal
 from enum import Enum
+from dotenv import load_dotenv
 from disnake.ext import commands
 from Config.helpers import helpers
+
+# Reminder to windows users that file system may not work as intended.
+# There is plans to peform this modifcation automatically to ensure the easiest dev environment possible
+if os.name == "nt": print("please note that you may need to change all '/' with open commands to: " + '\\' + '\\' + "\nexample being within function: 'balance'")
+else: print("Current filesystem is configured for linux (Ubuntu)")
+
+load_dotenv()
 
 Idticker = 1
 
@@ -107,21 +119,28 @@ async def start_game(ctx: disnake.ApplicationCommandInteraction,
         "selectedGame" : selected_game,
         "players": [ctx.author.id],
     }
-
+    global rooms
+    author: disnake.user = ctx.author
+    guildID = ctx.guild.id
+    inRoom = helpers.locateRoom(rooms, guildID, author.id, True)
     deductStatus = helpers.deductBalance(ctx.guild_id, ctx.author, entry_fee)
-    if deductStatus == True:
-        assignedID = genID(ctx.guild_id)
-        try:
-            returnObject = await helpers.initGame(assignedID, selected_game, ctx.author.id, ctx.guild_id, client, entry_fee)
-        except:
-            await verifySetup(client, ctx.guild)
-            returnObject = await helpers.initGame(assignedID, selected_game, ctx.author.id, ctx.guild_id, client, entry_fee)
-        finally:
-            returnStatus = storeRoom(returnObject, gameInfo, ctx.guild_id)
+    if inRoom == False:
+        if deductStatus == True:
+            assignedID = genID(ctx.guild_id)
+            try:
+                returnObject = await helpers.initGame(assignedID, selected_game, ctx.author.id, ctx.guild_id, client, entry_fee)
+            except:
+                await verifySetup(client, ctx.guild)
+                returnObject = await helpers.initGame(assignedID, selected_game, ctx.author.id, ctx.guild_id, client, entry_fee)
+            finally:
+                returnStatus = storeRoom(returnObject, gameInfo, ctx.guild_id)
 
-        await ctx.send("Room Successfully created", ephemeral=True)
+            await ctx.send("Room Successfully created", ephemeral=True)
+        else:
+            await ctx.send("You do not have enough credits for this entry fee", ephemeral=True)
+    # This else catches if the player is already in a room
     else:
-        await ctx.send("You do not have enough credits for this entry fee", ephemeral=True)
+        await ctx.send("You are already in a room in this guild, unable to start", ephemeral=True)
 
 
 
@@ -140,7 +159,7 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
     if inRoom == False:
         # Check to ensure that the game is not active
         # Active games game the gamestate of True
-        if rooms[guildID][room_id]["gameObject"].gamestate != True:
+        if rooms[guildID][room_id]["gameObject"].gameState != True:
             deductStatus = helpers.deductBalance(guildID, author, rooms[guildID][room_id]["gameObject"].entryFee)
             if deductStatus == True:
                 permissionSet = (await helpers.addPlayer(rooms[guildID][room_id]["gameChannel"], author))
@@ -148,6 +167,8 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
                     activePlayers = rooms[guildID][room_id]["players"]
                     activePlayers.append(author.id)
                     rooms[guildID][room_id]["players"] = activePlayers
+                    await ctx.send("Room joined successfully", ephemeral=True)
+
             # This else catches if the player does not have enough money to participate
             else:
                 await ctx.send("You do not have enough balance to enter this room", ephemeral=True)
@@ -162,7 +183,7 @@ async def join(ctx: disnake.ApplicationCommandInteraction,
 
 @client.slash_command()
 async def balance(ctx: disnake.ApplicationCommandInteraction):
-        configInfo = json.load(open(f"Config\\Guilds\\{ctx.guild.id}.json", "r"))
+        configInfo = json.load(open(f"Config/Guilds/{ctx.guild.id}.json", "r"))
         balance = configInfo["economy"][str(ctx.author.id)]
 
         await ctx.send(f"You current have {balance} credits", ephemeral=True)
@@ -172,41 +193,41 @@ async def balance(ctx: disnake.ApplicationCommandInteraction):
 #  ensure the discord server has valid channels that accord to the configuration file
 async def verifySetup(client, guild):
                 channelID = 0
-                catergoryID = 0
-                for catergory in guild.by_category():
-                    if str(catergory[0]) == "GambleBot":
-                        for channel in catergory[1]:
+                categoryID = 0
+                for category in guild.by_category():
+                    if str(category[0]) == "GambleBot":
+                        for channel in category[1]:
                             if channel.name == "rooms":
                                 channelID = channel.id
                                 break
                         else:
                             # create text channel
-                            channel = await catergory[0].create_text_channel("rooms")
+                            channel = await category[0].create_text_channel("rooms")
                             await channel.set_permissions(guild.default_role,send_messages=False,add_reactions=False,embed_links=False,attach_files=False,create_instant_invite=False,create_public_threads=False,use_application_commands=False)
                             channelID = channel.id
-                        catergoryID = catergory[0].id
+                        categoryID = category[0].id
                         break
-                # create catergory
+                # create category
                 else:
-                    catergory = await guild.create_category("GambleBot", reason="Required channel for GambleBot", position=0)
-                    await catergory.set_permissions(guild.default_role,send_messages=False,add_reactions=False,embed_links=False,attach_files=False,create_instant_invite=False,create_public_threads=False,use_application_commands=False)
-                    channel = await catergory.create_text_channel("rooms")
+                    category = await guild.create_category("GambleBot", reason="Required channel for GambleBot", position=0)
+                    await category.set_permissions(guild.default_role,send_messages=False,add_reactions=False,embed_links=False,attach_files=False,create_instant_invite=False,create_public_threads=False,use_application_commands=False)
+                    channel = await category.create_text_channel("rooms")
                     channelID = channel.id
 
 
-                    # Bug with catergory ID causes fatal error on initial setup and creation; not iterable, return object is "GambleBot"
-                    catergoryID = catergory[0].id
+                    # Bug with category ID causes fatal error on initial setup and creation; not iterable, return object is "GambleBot"
+                    categoryID = category[0].id
                     
 
                 config = {
                     "roomChannel":channelID,
-                    "Catergory":catergoryID,
+                    "category":categoryID,
                     "economy":{
                         guild.owner.id:0
                     }
                 }
 
-                with open(f"Config\\Guilds\\{guild.id}.json", "w+") as file:
+                with open(f"Config/Guilds/{guild.id}.json", "w+") as file:
                     json.dump(config, file, indent=4)
 
 
@@ -215,7 +236,7 @@ async def verifySetup(client, guild):
 async def on_ready():
     for guild in client.guilds:
         try:   
-            open(f"Config\\Guilds\\{guild.id}.json", "r")
+            open(f"Config/Guilds/{guild.id}.json", "r")
         except(FileNotFoundError):
             await verifySetup(client, guild)
     print("bot booted")
@@ -236,13 +257,20 @@ async def checkCurrentRooms():
                             await rooms[guild][guildroom]["hostMessage"].delete()
                     # if the game has finished, delete it from rooms storage, and delete the channel
                         elif rooms[guild][guildroom]["gameObject"].gameState == 2:
-                            await rooms[guild][guildroom]["gameChannel"].delete()
-                            del rooms[guild][guildroom]
+                            try:
+                                await rooms[guild][guildroom]["hostMessage"].delete()
+                            finally:
+                                await rooms[guild][guildroom]["gameChannel"].delete()
+                                del rooms[guild][guildroom]
 
                     except Exception as e:
                         print(e)
         except RuntimeError:
             pass
+        # Reset the id ticket back to zero every 20 seconds.
+        # The Id room gen should be able to handle this properly
+        global Idticker
+        Idticker = 1
         await asyncio.sleep(20)
 
 
@@ -274,6 +302,7 @@ async def on_message(message: disnake.Message):
         pass
 
 try:
-    client.run(os.environ.get("GambleBot"))
+    client.run(os.getenv("token"))
+
 except(SystemExit):
     print("Exit Handled")

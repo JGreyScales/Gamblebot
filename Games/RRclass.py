@@ -1,3 +1,6 @@
+# Known bugs
+# currently players can just spin the revolver forever and never go anywhere
+
 import disnake, random, math
 class RussianRoullete:
     def __init__(self, id: int, players: list, owner: int, entryFee: int) -> None:
@@ -36,10 +39,10 @@ class RussianRoullete:
             
     async def fire(self, message: disnake.Message, room: dict) -> bool:
         if self.gameState == True and len(self.players) > 1:
-            if self.bulletChamber == self.currentIndex + 1:
+            if self.bulletChamber == self.currentIndex:
+                await room["gameChannel"].send(f"user {message.author} has been eliminated")
                 await room["gameChannel"].set_permissions(message.author, view_channel=False, send_messages=False)
                 self.players.pop(self.currentIndex)
-                await room["gameChannel"].send(f"user {message.author} has been eliminated")
 
             returnValue = await RussianRoullete.assist_nextPlayer(self, message, room)
             if type(returnValue) == list:
@@ -61,7 +64,7 @@ class RussianRoullete:
     async def startGame(self, message: disnake.Message, room: dict):
         # If the game is not currently active, run the setup commands
         if self.gameState != True and str(message.author.id) == str(self.ownerID):
-            self.bulletChamber = random.randint(1, len(room["players"]))
+            self.bulletChamber = random.randint(0, len(room["players"]) - 1)
             self.gameState = True
             self.players = list(room["players"])
             self.currentIndex = random.randint(0, len(room["players"]) - 1)
